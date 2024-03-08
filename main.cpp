@@ -1,4 +1,7 @@
 #include <iostream>
+#include <iomanip>
+#include <cstdlib>
+#include <ctime>
 
 using namespace std;
 
@@ -11,10 +14,14 @@ void print_matrix(double matrix[][SIZE], int size);
 void copy_matrix(double src[][SIZE], double dest[][SIZE], int size);
 void to_minor(double matrix[][SIZE], int size, int i, int j);
 void to_triangular(double matrix[][SIZE], int size);
-double det_for_triangular(double matrix[][SIZE], int size);
+void fill_random(double matrix[][SIZE], int size);
+void fill_natural(double matrix[][SIZE], int size);
+void input_from_keyboard(double matrix[][SIZE], int size);
 
 
 double matrix[SIZE][SIZE];
+clock_t start, finish, ticks1, ticks2;
+double time1, time2;
 
 
 int main()
@@ -28,40 +35,74 @@ int main()
         return 0;
     }
 
-    cout << "\nEnter matrix:\n";
-    for (int row = 0; row < size; row++)
+    char input_mode;
+    cout << "\nSelect input mode (k - keyboard, r - random, n - natural): ";
+    cin >> input_mode;
+
+    switch (input_mode)
     {
-        cout << "Row " << row + 1 << ": ";
-        for (int col = 0; col < size; col++)
+        case 'k':
         {
-            cin >> matrix[row][col];
+            input_from_keyboard(matrix, size);
+            break;
+        }
+        case 'r':
+        {
+            fill_random(matrix, size);
+            break;
+        }
+        case 'n':
+        {
+            fill_natural(matrix, size);
+            break;
+        }
+        default:
+        {
+            cout << "Incorrect input mode";
+            return 0;
         }
     }
-
-    int row;
-    cout << "\nEnter row for expansion: ";
-    cin >> row;
-    if (row < 1 || row > size)
-    {
-        cout << "Incorrect row";
-        return 0;
-    }
-    row -= 1;
 
     cout << "\nEntered matrix:\n";
     print_matrix(matrix, size);
 
-    double det1 = det(matrix, size, row);
+    int col;
+    cout << "\nEnter col for expansion: ";
+    cin >> col;
+    if (col < 1 || col > size)
+    {
+        cout << "Incorrect col";
+        return 0;
+    }
+    col -= 1;
+
+    start = clock();
+    double det1 = det(matrix, size, col);
+    finish = clock();
+
+    ticks1 = finish - start;
+    time1 = 1e3 * ticks1 / CLOCKS_PER_SEC;
+
     cout << "\nValue of determinant: " << det1 << endl;
 
+    start = clock();
     to_triangular(matrix, size);
+    double det2 = det(matrix, size, col);
+    finish = clock();
+
+    ticks2 = finish - start;
+    time2 = 1e3 * ticks2 / CLOCKS_PER_SEC;
+
     cout << "\nTriangular matrix:\n";
     print_matrix(matrix, size);
 
-    double det2 = det_for_triangular(matrix, size);
     cout << "\nValue of determinant for triangular matrix: " << det2 << endl;
 
     cout << "\nThe differ beetween the determinants: " << abs(det1 - det2) << endl;
+
+    cout << setprecision(15);
+    cout << "\nRecursive calculation took " << time1 << " miliseconds (" << ticks1 << " ticks)";
+    cout << "\nCalculation from trinagular took " << time2 << " miliseconds (" << ticks2 << " ticks)";
 
     return 0;
 }
@@ -79,7 +120,11 @@ double det(double matrix[][SIZE], int size, int col)
         double minor_matrix[SIZE][SIZE];
         copy_matrix(matrix, minor_matrix, size);
         to_minor(minor_matrix, size, row, col);
-        result += det(minor_matrix, size - 1, 0) * matrix[row][col] * ((row + col) % 2 != 0 ? -1 : 1);
+        double elem = matrix[row][col];
+        if (elem != 0)
+        {
+            result += det(minor_matrix, size - 1, 0) * elem * ((row + col) % 2 != 0 ? -1 : 1);
+        }
     }
     return result;
 }
@@ -117,24 +162,21 @@ void to_triangular(double matrix[][SIZE], int size)
 }
 
 
-double det_for_triangular(double matrix[][SIZE], int size)
-{
-    double p = 1;
-    for (int row = 0; row < size; row++)
-    {
-        p *= matrix[row][row];
-    }
-    return p;
-}
-
-
 void print_matrix(double matrix[][SIZE], int size)
 {
+    cout << setprecision(4);
+    for (int col = 0; col < size; col++)
+    {
+        cout << "\t" << col + 1;
+    }
+    cout << endl;
     for (int row = 0; row < size; row++)
     {
+        cout << row + 1 << "\t";
         for (int col = 0; col < size; col++)
         {
-            cout << matrix[row][col] << "\t";
+            double elem = matrix[row][col];
+            cout << (abs(elem) < 1e-4 ? 0 : elem) << "\t";
         }
         cout << endl;
     }
@@ -167,6 +209,44 @@ void to_minor(double matrix[][SIZE], int size, int i, int j)
         for (int col = j; col < size - 1; col++)
         {
             matrix[row][col] = matrix[row][col + 1];
+        }
+    }
+}
+
+
+void fill_random(double matrix[][SIZE], int size)
+{
+    for (int row = 0; row < size; row++)
+    {
+        for (int col = 0; col < size; col++)
+        {
+            matrix[row][col] = double(rand()) * 1e-4;
+        }
+    }
+}
+
+
+void fill_natural(double matrix[][SIZE], int size)
+{
+    for (int row = 0; row < size; row++)
+    {
+        for (int col = 0; col < size; col++)
+        {
+            matrix[row][col] = row * size + col + 1;
+        }
+    }
+}
+
+
+void input_from_keyboard(double matrix[][SIZE], int size)
+{
+    cout << "\nEnter matrix:\n";
+    for (int row = 0; row < size; row++)
+    {
+        cout << "Row " << row + 1 << ": ";
+        for (int col = 0; col < size; col++)
+        {
+            cin >> matrix[row][col];
         }
     }
 }
